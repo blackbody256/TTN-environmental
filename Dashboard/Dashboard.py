@@ -6,11 +6,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import numpy as np
-import os
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
 
 # -----------------------------
 # Page Configuration
@@ -72,26 +67,41 @@ wifi_svg = """<svg xmlns="http://www.w3.org/2000/svg" class="icon" viewBox="0 0 
 stats_svg = """<svg xmlns="http://www.w3.org/2000/svg" fill="#fb8c00" class="icon" viewBox="0 0 24 24"><path d="M3 17h2v-7H3v7zm4 0h2V7H7v10zm4 0h2v-4h-2v4zm4 0h2V4h-2v13zm4 0h2V10h-2v7z"/></svg>"""
 
 # -----------------------------
-# Configuration from environment variables (from cloud version)
+# Configuration from Streamlit secrets
 # -----------------------------
-BUCKET_NAME = os.getenv('BUCKET_NAME', 'iotbucket256')
-DEVICE_ID = os.getenv('DEVICE_ID', 'lht65n-01-temp-humidity-sensor')
-AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
-AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
-AWS_REGION = os.getenv('AWS_DEFAULT_REGION', 'eu-west-1')
+try:
+    BUCKET_NAME = st.secrets.get("BUCKET_NAME", "iotbucket256")
+    DEVICE_ID = st.secrets.get("DEVICE_ID", "lht65n-01-temp-humidity-sensor")
+    
+    # AWS credentials from Streamlit secrets
+    AWS_ACCESS_KEY_ID = st.secrets["AWS_ACCESS_KEY_ID"]
+    AWS_SECRET_ACCESS_KEY = st.secrets["AWS_SECRET_ACCESS_KEY"]
+    AWS_REGION = st.secrets.get("AWS_REGION", "eu-west-1")
+except KeyError as e:
+    st.error(f"⚠️ Missing secret: {e}")
+    st.write("Please add the following secrets to your Streamlit secrets:")
+    st.code("""
+# .streamlit/secrets.toml
+AWS_ACCESS_KEY_ID = "your_access_key_here"
+AWS_SECRET_ACCESS_KEY = "your_secret_key_here"
+AWS_REGION = "eu-west-1"
+BUCKET_NAME = "iotbucket256"
+DEVICE_ID = "lht65n-01-temp-humidity-sensor"
+    """)
+    st.stop()
 
 @st.cache_resource
 def get_s3_client():
     """Create S3 client with credentials"""
-    if not AWS_ACCESS_KEY_ID or not AWS_SECRET_ACCESS_KEY:
-        st.error("AWS credentials not found in environment variables. Please check your .env file.")
+    try:
+        return boto3.client('s3',
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+            region_name=AWS_REGION
+        )
+    except Exception as e:
+        st.error(f"Failed to create S3 client: {e}")
         st.stop()
-    
-    return boto3.client('s3',
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-        region_name=AWS_REGION
-    )
 
 @st.cache_data(ttl=300)  # Cache for 5 minutes
 def load_data_from_s3(days_back=7):
@@ -222,19 +232,6 @@ def plot_correlation(df):
     return fig
 
 def main():
-    # Check for environment variables (from cloud version)
-    if not AWS_ACCESS_KEY_ID or not AWS_SECRET_ACCESS_KEY:
-        st.error("⚠️ AWS credentials not found!")
-        st.write("Please ensure you have a `.env` file in your project directory with:")
-        st.code("""
-AWS_ACCESS_KEY_ID=your_access_key_here
-AWS_SECRET_ACCESS_KEY=your_secret_key_here
-AWS_DEFAULT_REGION=eu-west-1
-BUCKET_NAME=iotbucket256
-DEVICE_ID=lht65n-01-temp-humidity-sensor
-        """)
-        st.stop()
-
     # Header with CSV version styling
     st.markdown("<h1 style='color:#2e7d32;'>🌱 IoT Environmental Monitoring Dashboard</h1>", unsafe_allow_html=True)
     st.markdown("Real-time monitoring of temperature, humidity and motion with LHT65N sensor")
