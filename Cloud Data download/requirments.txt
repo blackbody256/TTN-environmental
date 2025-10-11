@@ -1,4 +1,4 @@
-#pip install boto3 pandas openyxl
+#pip install boto3 pandas openpyxl
 boto3
 pandas
 openyxl
