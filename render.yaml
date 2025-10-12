@@ -2,10 +2,9 @@ services:
   - type: web
     name: temperature-prediction-api
     env: docker
-    dockerfilePath: ./Dockerfile
-    rootDir: API  # <-- ADD THIS LINE
-    region: frankfurt  # or oregon, singapore, etc.
-    plan: free  # or starter ($7/month)
+    dockerfilePath: ./API/Dockerfile  # <-- Path from root
+    region: frankfurt
+    plan: free
     healthCheckPath: /api/health
     envVars:
       - key: FLASK_ENV
