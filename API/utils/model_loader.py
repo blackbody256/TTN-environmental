@@ -29,14 +29,34 @@ class ModelLoader:
             logger.info(f"Loading model from {model_path}")
             model_package = joblib.load(model_path)
             
-            self._model = model_package['model']
-            self._metadata = model_package['metadata']
+            # Handle both dictionary and direct model formats
+            if isinstance(model_package, dict):
+                self._model = model_package.get('model')
+                self._metadata = model_package.get('metadata', {})
+            else:
+                # If it's just the model directly
+                self._model = model_package
+                self._metadata = {
+                    'model_type': type(model_package).__name__,
+                    'mae': 0.5338,  # Your model's MAE
+                    'features': [
+                        'humidity_percent',
+                        'humidity_lag_1',
+                        'motion_counts',
+                        'rssi',
+                        'temp_lag_1',
+                        'temp_lag_3',
+                        'temp_lag_6',
+                        'temp_roll_mean_6',
+                        'temp_roll_std_6'
+                    ]
+                }
             
-            logger.info(f"Model loaded successfully. MAE: {self._metadata['mae']:.4f}°C")
+            logger.info(f"✅ Model loaded successfully. Type: {type(self._model).__name__}")
             return self._model, self._metadata
             
         except Exception as e:
-            logger.error(f"Failed to load model: {str(e)}")
+            logger.error(f"❌ Failed to load model: {str(e)}")
             raise
     
     def get_model(self):
@@ -47,5 +67,6 @@ class ModelLoader:
     
     def predict(self, features):
         """Make prediction with loaded model"""
-        model, _ = self.get_model()
-        return model.predict(features)
+        if self._model is None:
+            raise RuntimeError("Model not loaded. Call load_model() first.")
+        return self._model.predict(features)

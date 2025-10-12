@@ -5,12 +5,8 @@ class Config:
     """Base configuration"""
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
     
-    # Model path
-    BASE_DIR = Path(__file__).parent.parent
-    MODEL_PATH = os.environ.get(
-        'MODEL_PATH',
-        str(BASE_DIR / 'ML_model' / 'temperature_ridge_model.pkl')
-    )
+    # Model path - prioritize environment variable, then relative path
+    MODEL_PATH = os.environ.get('MODEL_PATH', './temperature_ridge_model.pkl')
     
     # API Configuration
     MAX_CONTENT_LENGTH = 1 * 1024 * 1024  # 1MB max request size

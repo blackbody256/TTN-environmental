@@ -18,9 +18,15 @@ def health_check():
             'model_mae': metadata.get('mae'),
             'python_version': sys.version.split()[0]
         }), 200
-    except Exception as e:
+    except RuntimeError as e:
         return jsonify({
             'status': 'unhealthy',
+            'model_loaded': False,
+            'error': str(e)
+        }), 500
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
             'model_loaded': False,
             'error': str(e)
         }), 500
@@ -36,6 +42,11 @@ def model_info():
             'success': True,
             'metadata': metadata
         }), 200
+    except RuntimeError as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
     except Exception as e:
         return jsonify({
             'success': False,
