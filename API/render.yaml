@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: temperature-prediction-api
+    env: docker
+    dockerfilePath: ./Dockerfile
+    region: frankfurt  # or oregon, singapore, etc.
+    plan: free  # or starter ($7/month)
+    healthCheckPath: /api/health
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: MODEL_PATH
+        value: ./temperature_ridge_model.pkl
